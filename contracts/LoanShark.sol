@@ -40,11 +40,15 @@ contract LoanShark is Ownable {
     }
 
     // Owner specific functions
-    function withdraw() external onlyOwner {
+    function claimETH() external onlyOwner {
         uint256 amount = collectedFees;
         collectedFees = 0;
 
         payable(owner()).transfer(amount);
+    }
+
+    function claim(address _token, uint256 _amount) external onlyOwner {
+        IERC20(_token).transfer(owner(), _amount);
     }
 
     function setFee(uint256 _fee) external onlyOwner {
@@ -66,7 +70,7 @@ contract LoanShark is Ownable {
     function borrow() external payable {
         uint256 amount = msg.value;
         uint256 balance = token.balanceOf(address(this));
-        require(amount > 0 && amount < balance, "Cannot process amount");
+        require(amount > 0 && amount <= balance, "Cannot process amount");
 
         token.transfer(msg.sender, amount * ratio);
 

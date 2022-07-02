@@ -1,19 +1,19 @@
 import { expect } from "chai";
 import { ethers } from "hardhat";
 
-describe("Greeter", function () {
-  it("Should return the new greeting once it's changed", async function () {
-    const Greeter = await ethers.getContractFactory("Greeter");
-    const greeter = await Greeter.deploy("Hello, world!");
-    await greeter.deployed();
+describe("Loan Shark", function () {
+  let token, loanshark, account0;
 
-    expect(await greeter.greet()).to.equal("Hello, world!");
+  this.beforeAll(async function () {
+    [account0] = await ethers.getSigners()
 
-    const setGreetingTx = await greeter.setGreeting("Hola, mundo!");
+    const TokenFactory = await ethers.getContractFactory('SharkToken')
+    token = await TokenFactory.deploy()
 
-    // wait until the transaction is mined
-    await setGreetingTx.wait();
+    const SharkFactory = await ethers.getContractFactory('LoanShark')
+    loanshark = await SharkFactory.deploy(token.address, 1, 0)
+    token.approve(loanshark.address, ethers.constants.MaxUint256)
+  })
 
-    expect(await greeter.greet()).to.equal("Hola, mundo!");
-  });
+
 });
