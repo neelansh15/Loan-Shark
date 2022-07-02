@@ -16,7 +16,7 @@ describe("Loan Shark", function () {
     await token.deployed()
 
     const SharkFactory = await ethers.getContractFactory('LoanShark')
-    loanshark = await SharkFactory.deploy(token.address, parseEther('1'), 0)
+    loanshark = await SharkFactory.deploy(token.address, parseEther('2'), 0)
 
     await loanshark.deployed()
 
@@ -41,12 +41,16 @@ describe("Loan Shark", function () {
     const fee = +formatEther(await loanshark.fee())
     const ratio = +formatEther(await loanshark.ratio())
 
-    const amount = "1"
+    const initialEthBalance = +formatEther(await account0.getBalance())
 
+    const tokenAmount = "2"
     await token.approve(loanshark.address, ethers.constants.MaxUint256)
-    await loanshark.repay(parseEther(amount))
+    await loanshark.repay(parseEther(tokenAmount))
 
-    const finalAmount = ((+amount / ratio) - fee).toString()
-    expect(amount).to.eq(finalAmount)
+    const finalEthBalance = +formatEther(await account0.getBalance())
+
+    const finalEthAmount = ((+tokenAmount / ratio) - fee).toString()
+
+    expect(finalEthBalance - initialEthBalance).to.closeTo(+finalEthAmount, 0.1)
   })
 });
