@@ -30,11 +30,11 @@ const config: HardhatUserConfig = {
       accounts:
         process.env.PRIVATE_KEY !== undefined ? [process.env.PRIVATE_KEY] : [],
     },
-    hardhat: {
-      forking: {
-        url: "https://eth-goerli.alchemyapi.io/v2/Wim8o-qj68eARyJsYhbbElh-oSeq0539",
-      }
-    }
+    // hardhat: {
+    //   forking: {
+    //     url: "https://eth-goerli.alchemyapi.io/v2/Wim8o-qj68eARyJsYhbbElh-oSeq0539",
+    //   }
+    // }
   },
   gasReporter: {
     enabled: process.env.REPORT_GAS !== undefined,
