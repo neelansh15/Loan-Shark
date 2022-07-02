@@ -26,8 +26,18 @@ contract LoanShark is Ownable {
         address newStablecoin,
         address indexed owner
     );
-    event Borrow(address indexed borrower, uint256 amount, uint256 timestamp);
-    event Repay(address indexed borrower, uint256 amount, uint256 timestamp);
+    event Borrow(
+        address indexed borrower,
+        address indexed stablecoin,
+        uint256 amount,
+        uint256 timestamp
+    );
+    event Repay(
+        address indexed borrower,
+        address indexed stablecoin,
+        uint256 amount,
+        uint256 timestamp
+    );
 
     constructor(
         address _stablecoin,
@@ -78,7 +88,7 @@ contract LoanShark is Ownable {
 
         token.transfer(msg.sender, (amount * ratio) / 1e18);
 
-        emit Borrow(msg.sender, amount, block.timestamp);
+        emit Borrow(msg.sender, stablecoin, amount, block.timestamp);
     }
 
     function repay(uint256 _amount) external {
@@ -92,6 +102,6 @@ contract LoanShark is Ownable {
         token.transferFrom(msg.sender, address(this), _amount);
         payable(msg.sender).transfer(finalAmount);
 
-        emit Repay(msg.sender, _amount, block.timestamp);
+        emit Repay(msg.sender, stablecoin, _amount, block.timestamp);
     }
 }
