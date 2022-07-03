@@ -55,7 +55,7 @@ contract LoanShark is Ownable {
     }
 
     // Owner specific functions
-    function claimETH() external onlyOwner {
+    function claimFees() external onlyOwner {
         uint256 amount = collectedFees;
         collectedFees = 0;
 
