@@ -5,8 +5,6 @@ pragma solidity ^0.8.0;
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/interfaces/IERC20.sol";
 
-import "hardhat/console.sol";
-
 /**
     Supply ether as collateral to receive stablecoin as loan for a fee and pay back anytime.
  */
@@ -20,7 +18,14 @@ contract LoanShark is Ownable {
     // Ratio of Stablecoin-ETH. If Ratio = 2 => Get 2 * x Stablecoins for x Ether
     uint256 public ratio;
 
+    // Currently borrowed amount of current stablecoin
+    uint256 public currentlyLent;
+
+    // Allow borrowing or not
+    bool public active = true;
+
     event SetFee(uint256 oldFee, uint256 newFee, address indexed owner);
+    event SetActive(bool active, address indexed owner);
     event SetStablecoin(
         address oldStablecoin,
         address newStablecoin,
@@ -66,7 +71,13 @@ contract LoanShark is Ownable {
         fee = _fee;
     }
 
+    function setActive(bool _active) external onlyOwner {
+        emit SetActive(_active, msg.sender);
+        active = _active;
+    }
+
     function setStablecoin(address _stablecoin) external onlyOwner {
+        require(currentlyLent == 0, "Loans pending");
         emit SetStablecoin(stablecoin, _stablecoin, msg.sender);
         stablecoin = _stablecoin;
     }
@@ -77,6 +88,7 @@ contract LoanShark is Ownable {
     }
 
     function borrow() external payable {
+        require(active, "Borrowing is paused");
         uint256 amount = msg.value;
         IERC20 token = IERC20(stablecoin);
         uint256 balance = token.balanceOf(address(this));
@@ -85,6 +97,8 @@ contract LoanShark is Ownable {
             amount > 0 && (amount * ratio) / 10**18 <= balance,
             "Cannot process amount"
         );
+
+        currentlyLent += (amount * ratio) / 1e18;
 
         token.transfer(msg.sender, (amount * ratio) / 1e18);
 
@@ -97,6 +111,7 @@ contract LoanShark is Ownable {
         require(ethBalance() >= finalAmount, "Insufficient ETH Balance");
 
         collectedFees += fee;
+        currentlyLent -= _amount;
 
         IERC20 token = IERC20(stablecoin);
         token.transferFrom(msg.sender, address(this), _amount);
