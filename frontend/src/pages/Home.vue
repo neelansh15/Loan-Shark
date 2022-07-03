@@ -15,7 +15,8 @@ const provider = new ethers.providers.Web3Provider(window.ethereum)
 
 const balances = reactive({
     eth: 0,
-    token: 0
+    token: 0,
+    allowance: 0
 })
 
 const contractDetails = reactive({
@@ -40,6 +41,11 @@ const ethAmount = computed(() => {
     return (tokenAmount1.value / contractDetails.ratio).toFixed(18)
 })
 
+const ethAmountRepay = computed(() => {
+    if (!contractDetails.ratio || !tokenAmount2.value) return 0
+    return ((tokenAmount2.value * contractDetails.ratio) - (contractDetails.fee ?? 0)).toFixed(18)
+})
+
 let token: any = null
 let loanshark: any = null
 
@@ -62,6 +68,7 @@ async function init() {
 
     getBalances()
     getLoanSharkDetails()
+    getAllowance()
 }
 
 async function getBalances() {
@@ -82,11 +89,31 @@ async function getLoanSharkDetails() {
     contractDetails.fee = +formatEther(await loanshark.fee())
 }
 
+async function getAllowance() {
+    balances.allowance = +formatEther(await token.allowance(address.value, contractDetails.address))
+}
+
+async function approve() {
+    if (!contractDetails.address) return
+    const result = await token.approve(contractDetails.address, ethers.constants.MaxUint256)
+    await result.wait(1)
+    getAllowance()
+}
+
 async function borrow() {
     if (!tokenAmount1.value) return
-    await loanshark.borrow({
+    const result = await loanshark.borrow({
         value: parseEther(ethAmount.value.toString())
     })
+    await result.wait(1)
+    init()
+}
+
+async function repay() {
+    if (!tokenAmount2.value) return
+    const result = await loanshark.repay(parseEther(tokenAmount2.value.toString()))
+    await result.wait(1)
+    init()
 }
 
 </script>
@@ -136,19 +163,24 @@ async function borrow() {
                 </form>
             </div>
             <!-- Repay card -->
-            <!-- <div class="mt-5 border rounded-lg p-5" v-if="contractDetails.ratio">
-                <h1 class="font-bold text-lg">Borrow</h1>
-                <form @submit.prevent="borrow">
-                    <label for="borrowToken">Amount of Stablecoins to borrow:</label><br />
+            <div class="mt-5 border rounded-lg p-5" v-if="contractDetails.ratio">
+                <h1 class="font-bold text-lg">Repay</h1>
+                <form @submit.prevent="repay">
+                    <label for="borrowToken">Amount of Stablecoins to repay:</label><br />
                     <input type="number" inputmode="decimal" :step="'.' + ''.padEnd(17, '0') + '1'"
-                        v-model="tokenAmount1" min="0" :max="contractDetails.token" name="borrowToken" id="borrowToken"
+                        v-model="tokenAmount2" min="0" :max="balances.token" name="borrowToken" id="borrowToken"
                         placeholder="Stablecoin amount" class="border rounded-lg px-2 py-2 mt-2 w-full font-mono" />
 
-                    <h3 class="font-bold mt-3">ETH to pay: {{ ethAmount }}</h3>
-                    <button type="submit"
-                        class="rounded-lg bg-blue-500 px-3 py-2 mt-2 text-white text-sm">Borrow</button>
+                    <h3 class="font-bold mt-3">ETH to be received: {{ ethAmountRepay }}</h3>
+                    <button type="button" v-if="balances.allowance == 0" @click="approve"
+                        class="rounded-lg border border-blue-500 px-3 py-2 mt-2 text-blue-500 text-sm">Approve
+                        {{
+                                tokenDetails.symbol
+                        }}</button>
+                    <button v-else type="submit"
+                        class="rounded-lg bg-blue-500 px-3 py-2 mt-2 text-white text-sm">Repay</button>
                 </form>
-            </div> -->
+            </div>
         </div>
     </div>
 </template>
