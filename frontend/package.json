@@ -8,9 +8,13 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "ethers": "^5.6.9",
     "pinia": "^2.0.14",
+    "vite-plugin-windicss": "^1.8.6",
     "vue": "^3.2.25",
-    "vue-router": "4"
+    "vue-connect-wallet": "^0.1.5",
+    "vue-router": "4",
+    "windicss": "^3.5.6"
   },
   "devDependencies": {
     "@vitejs/plugin-vue": "^2.3.3",

@@ -4,6 +4,10 @@ const routes = [
     {
         path: '/',
         component: () => import('../pages/Home.vue')
+    },
+    {
+        path: '/:pathMatch(.*)*',
+        component: () => import('../pages/PathNotFound.vue'),
     }
 ]
 
