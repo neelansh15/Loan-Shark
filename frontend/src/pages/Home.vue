@@ -121,7 +121,10 @@ async function repay() {
 <template>
     <div class="pb-15">
         <Navbar />
-        <div class="mx-auto w-11/12 md:w-1/2">
+        <div v-if="!address" class="mx-auto mt-10 w-11/12 md:w-1/2">
+            <h1>Please connect your wallet to use this Dapp</h1>
+        </div>
+        <div v-else class="mx-auto w-11/12 md:w-1/2">
             <div class="mt-10 border rounded-lg p-5">
                 <h1 class="flex space-x-2 items-center text-sm font-medium">
                     <Jazzicon :diameter="40" :address="address" class="mt-1" /><span>{{ address }}</span>

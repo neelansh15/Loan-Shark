@@ -29,8 +29,11 @@ onMounted(async () => {
 </script>
 
 <template>
-    <div class="p-5 bg-gray-100 flex justify-between items-center">
-        <h1>LoanShark</h1>
+    <div class="p-5 bg-gray-50 flex justify-between items-center">
+        <div class="-space-y-0.5">
+            <h1 class="font-bold text-lg">LoanShark</h1>
+            <p class="text-gray-500 text-xs">by Neelansh Mathur</p>
+        </div>
         <div>
             <ConnectWalletButton :address="address || ''" @click="connect" />
         </div>
