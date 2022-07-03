@@ -3,23 +3,39 @@
 //
 // When running the script with `npx hardhat run <script>` you'll find the Hardhat
 // Runtime Environment's members available in the global scope.
+import { parseEther } from "ethers/lib/utils";
+import { writeFileSync } from "fs";
 import { ethers } from "hardhat";
 
 async function main() {
-  // Hardhat always runs the compile task when running scripts with its command
-  // line interface.
-  //
-  // If this script is run directly using `node` you may want to call compile
-  // manually to make sure everything is compiled
-  // await hre.run('compile');
 
-  // We get the contract to deploy
-  const Greeter = await ethers.getContractFactory("Greeter");
-  const greeter = await Greeter.deploy("Hello, Hardhat!");
+  // Token
+  const Token = await ethers.getContractFactory("SharkUSDC")
+  const token = await Token.deploy()
 
-  await greeter.deployed();
+  await token.deployed()
 
-  console.log("Greeter deployed to:", greeter.address);
+  const tokenData = JSON.stringify({
+    address: token.address,
+    abi: JSON.parse(token.interface.format('json') as string)
+  })
+  writeFileSync('./frontend/src/abis/Token.json', tokenData);
+
+  console.log("Token deployed to:", token.address);
+
+  // LoanShark
+  const LoanShark = await ethers.getContractFactory("LoanShark");
+  const loanshark = await LoanShark.deploy(token.address, parseEther('1'), 0);
+
+  await loanshark.deployed();
+
+  const loansharkData = JSON.stringify({
+    address: loanshark.address,
+    abi: JSON.parse(loanshark.interface.format('json') as string)
+  })
+  writeFileSync('./frontend/src/abis/LoanShark.json', loansharkData);
+
+  console.log("LoanShark deployed to:", loanshark.address);
 }
 
 // We recommend this pattern to be able to use async/await everywhere
