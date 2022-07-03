@@ -49,6 +49,7 @@ contract LoanShark is Ownable {
         uint256 _ratio,
         uint256 _fee
     ) {
+        require(ratio > 0, "Zero ratio");
         stablecoin = _stablecoin;
         ratio = _ratio;
         fee = _fee;
