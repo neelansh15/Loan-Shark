@@ -9,28 +9,24 @@ import "@openzeppelin/contracts/interfaces/IERC20.sol";
     Supply ether as collateral to receive stablecoin as loan for a fee and pay back anytime.
  */
 contract LoanShark is Ownable {
-    address public stablecoin;
+    address public immutable stablecoin;
 
     // Fees in Ether
     uint256 public fee;
     uint256 public collectedFees;
 
     // Ratio of Stablecoin-ETH. If Ratio = 2 => Get 2 * x Stablecoins for x Ether
-    uint256 public ratio;
+    uint256 public immutable ratio;
 
-    // Currently borrowed amount of current stablecoin
+    // Currently borrowed amount of stablecoin
     uint256 public currentlyLent;
+    mapping(address => uint256) public borrowed;
 
     // Allow borrowing or not
     bool public active = true;
 
     event SetFee(uint256 oldFee, uint256 newFee, address indexed owner);
     event SetActive(bool active, address indexed owner);
-    event SetStablecoin(
-        address oldStablecoin,
-        address newStablecoin,
-        address indexed owner
-    );
     event Borrow(
         address indexed borrower,
         address indexed stablecoin,
@@ -49,7 +45,7 @@ contract LoanShark is Ownable {
         uint256 _ratio,
         uint256 _fee
     ) {
-        require(ratio > 0, "Zero ratio");
+        require(_ratio > 0, "Zero ratio");
         stablecoin = _stablecoin;
         ratio = _ratio;
         fee = _fee;
@@ -77,12 +73,6 @@ contract LoanShark is Ownable {
         active = _active;
     }
 
-    function setStablecoin(address _stablecoin) external onlyOwner {
-        require(currentlyLent == 0, "Loans pending");
-        emit SetStablecoin(stablecoin, _stablecoin, msg.sender);
-        stablecoin = _stablecoin;
-    }
-
     // Main functions
     function ethBalance() public view returns (uint256) {
         return address(this).balance;
@@ -101,18 +91,23 @@ contract LoanShark is Ownable {
 
         currentlyLent += (amount * ratio) / 1e18;
 
+        borrowed[msg.sender] += (amount * ratio) / 1e18;
+
         token.transfer(msg.sender, (amount * ratio) / 1e18);
 
         emit Borrow(msg.sender, stablecoin, amount, block.timestamp);
     }
 
     function repay(uint256 _amount) external {
-        uint256 finalAmount = (_amount / (ratio / 10**18)) - fee;
+        require(borrowed[msg.sender] >= _amount, "No Repay");
 
-        require(ethBalance() >= finalAmount, "Insufficient ETH Balance");
+        uint256 finalAmount = (_amount / (ratio / 10**18)) - fee;
+        require(ethBalance() >= finalAmount, "Insufficient ETH in Contract");
 
         collectedFees += fee;
         currentlyLent -= _amount;
+
+        borrowed[msg.sender] -= _amount;
 
         IERC20 token = IERC20(stablecoin);
         token.transferFrom(msg.sender, address(this), _amount);

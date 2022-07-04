@@ -10,22 +10,22 @@ import { ethers } from "hardhat";
 async function main() {
 
   // Token
-  const Token = await ethers.getContractFactory("SharkUSDC")
-  const token = await Token.deploy()
+  // const Token = await ethers.getContractFactory("SharkUSDC")
+  // const token = await Token.deploy()
 
-  await token.deployed()
+  // await token.deployed()
 
-  const tokenData = JSON.stringify({
-    address: token.address,
-    abi: JSON.parse(token.interface.format('json') as string)
-  })
-  writeFileSync('./frontend/src/abis/Token.json', tokenData);
+  // const tokenData = JSON.stringify({
+  //   address: token.address,
+  //   abi: JSON.parse(token.interface.format('json') as string)
+  // })
+  // writeFileSync('./frontend/src/abis/Token.json', tokenData);
 
-  console.log("Token deployed to:", token.address);
+  // console.log("Token deployed to:", token.address);
 
   // LoanShark
   const LoanShark = await ethers.getContractFactory("LoanShark");
-  const loanshark = await LoanShark.deploy(token.address, parseEther('1'), 0);
+  const loanshark = await LoanShark.deploy("0x1AfE5e07f6c6f092494DA8423708c412939B6906", parseEther('1'), 0);
 
   await loanshark.deployed();
 

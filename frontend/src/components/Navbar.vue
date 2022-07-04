@@ -9,7 +9,6 @@ const wallet = useMetaMaskWallet()
 
 const { address } = storeToRefs(store)
 
-
 const connect = async () => {
     const accounts = await wallet.connect()
     if (typeof accounts === 'string') return
