@@ -43,7 +43,7 @@ const ethAmount = computed(() => {
 
 const ethAmountRepay = computed(() => {
     if (!contractDetails.ratio || !tokenAmount2.value) return 0
-    return ((tokenAmount2.value * contractDetails.ratio) - (contractDetails.fee ?? 0)).toFixed(18)
+    return ((tokenAmount2.value / contractDetails.ratio) - (contractDetails.fee ?? 0)).toFixed(18)
 })
 
 let token: any = null

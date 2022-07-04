@@ -16,7 +16,7 @@ describe("Loan Shark", function () {
     await token.deployed()
 
     const SharkFactory = await ethers.getContractFactory('LoanShark')
-    loanshark = await SharkFactory.deploy(token.address, parseEther('2'), 0)
+    loanshark = await SharkFactory.deploy(token.address, parseEther('1000'), 0)
 
     await loanshark.deployed()
 
@@ -43,7 +43,7 @@ describe("Loan Shark", function () {
 
     const initialEthBalance = +formatEther(await account1.getBalance())
 
-    const tokenAmount = "2"
+    const tokenAmount = "1000"
     await token.connect(account1).approve(loanshark.address, ethers.constants.MaxUint256)
     await loanshark.connect(account1).repay(parseEther(tokenAmount))
 
