@@ -25,7 +25,7 @@ async function main() {
 
   // LoanShark
   const LoanShark = await ethers.getContractFactory("LoanShark");
-  const loanshark = await LoanShark.deploy("0x1AfE5e07f6c6f092494DA8423708c412939B6906", parseEther('1'), 0);
+  const loanshark = await LoanShark.deploy("0x1AfE5e07f6c6f092494DA8423708c412939B6906", parseEther('1000'), 0);
 
   await loanshark.deployed();
 
