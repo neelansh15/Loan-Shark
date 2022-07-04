@@ -5,10 +5,10 @@ import { ethers } from "hardhat";
 import { ERC20, LoanShark } from "../typechain";
 
 describe("Loan Shark", function () {
-  let token: ERC20, loanshark: LoanShark, account0: SignerWithAddress;
+  let token: ERC20, loanshark: LoanShark, account0: SignerWithAddress, account1: SignerWithAddress;
 
   this.beforeAll(async function () {
-    [account0] = await ethers.getSigners()
+    [account0, account1] = await ethers.getSigners()
 
     const TokenFactory = await ethers.getContractFactory('SharkUSDC')
     token = await TokenFactory.deploy()
@@ -29,11 +29,11 @@ describe("Loan Shark", function () {
     const amount = "1"
 
     // Borrow stablecoin with ETH
-    await loanshark.borrow({
+    await loanshark.connect(account1).borrow({
       value: parseEther(amount)
     })
 
-    const tokenBalance = +formatEther(await token.balanceOf(account0.address))
+    const tokenBalance = +formatEther(await token.balanceOf(account1.address))
     expect(tokenBalance).to.equal(+amount * ratio)
   })
 
@@ -41,13 +41,13 @@ describe("Loan Shark", function () {
     const fee = +formatEther(await loanshark.fee())
     const ratio = +formatEther(await loanshark.ratio())
 
-    const initialEthBalance = +formatEther(await account0.getBalance())
+    const initialEthBalance = +formatEther(await account1.getBalance())
 
     const tokenAmount = "2"
-    await token.approve(loanshark.address, ethers.constants.MaxUint256)
-    await loanshark.repay(parseEther(tokenAmount))
+    await token.connect(account1).approve(loanshark.address, ethers.constants.MaxUint256)
+    await loanshark.connect(account1).repay(parseEther(tokenAmount))
 
-    const finalEthBalance = +formatEther(await account0.getBalance())
+    const finalEthBalance = +formatEther(await account1.getBalance())
 
     const finalEthAmount = ((+tokenAmount / ratio) - fee).toString()
 
