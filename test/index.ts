@@ -64,7 +64,7 @@ describe("Loan Shark Native Currency", function () {
 });
 
 ///////// Loan Shark Token - Any ERC20 Token as Collateral
-describe.only("Loan Shark Token", function () {
+describe("Loan Shark Token", function () {
   let stablecoin: ERC20,
     collateralToken: ERC20,
     loanshark: LoanSharkToken,
