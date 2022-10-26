@@ -65,7 +65,7 @@ describe("Loan Shark Native Currency", function () {
 
 ///////// Loan Shark Token - Any ERC20 Token as Collateral
 describe.only("Loan Shark Token", function () {
-  let token: ERC20,
+  let stablecoin: ERC20,
     collateralToken: ERC20,
     loanshark: LoanSharkToken,
     account0: SignerWithAddress,
@@ -75,9 +75,9 @@ describe.only("Loan Shark Token", function () {
     [account0, account1] = await ethers.getSigners();
 
     const TokenFactory = await ethers.getContractFactory("SharkUSDC");
-    token = await TokenFactory.deploy("SharkUSDC", "sUSDC");
+    stablecoin = await TokenFactory.deploy("SharkUSDC", "sUSDC");
 
-    await token.deployed();
+    await stablecoin.deployed();
 
     collateralToken = await TokenFactory.deploy("CollateralToken", "CTKN");
 
@@ -85,7 +85,7 @@ describe.only("Loan Shark Token", function () {
 
     const SharkFactory = await ethers.getContractFactory("LoanSharkToken");
     loanshark = await SharkFactory.deploy(
-      token.address,
+      stablecoin.address,
       collateralToken.address,
       parseEther("1000"),
       0
@@ -93,10 +93,10 @@ describe.only("Loan Shark Token", function () {
 
     await loanshark.deployed();
 
-    token.transfer(loanshark.address, parseEther("100000"));
+    stablecoin.transfer(loanshark.address, parseEther("100000"));
   });
 
-  it.only("Borrow: Should transfer stablecoin in return for eth", async function () {
+  it("Borrow: Should transfer stablecoin in return for eth", async function () {
     const ratio = +formatEther(await loanshark.ratio());
 
     const amount = "1";
@@ -110,28 +110,36 @@ describe.only("Loan Shark Token", function () {
     // Borrow stablecoin with CollateralToken. Amount passed is the collateral amount
     await loanshark.connect(account1).borrow(amountRaw);
 
-    const tokenBalance = +formatEther(await token.balanceOf(account1.address));
+    const tokenBalance = +formatEther(
+      await stablecoin.balanceOf(account1.address)
+    );
     expect(tokenBalance).to.equal(+amount * ratio);
   });
 
-  it("Repay: Should return ETH minus fees when returning stablecoin", async function () {
+  it("Repay: Should return Collateral Token minus fees when returning stablecoin", async function () {
     const fee = +formatEther(await loanshark.fee());
     const ratio = +formatEther(await loanshark.ratio());
 
-    const initialEthBalance = +formatEther(await account1.getBalance());
+    const initialCollateralBalance = +formatEther(
+      await collateralToken.balanceOf(account1.address)
+    );
 
+    // Since ratio is 1000 in these tests, must have borrowed 1000 at least for 1 collateral token
     const tokenAmount = "1000";
-    await token
+
+    await stablecoin
       .connect(account1)
       .approve(loanshark.address, ethers.constants.MaxUint256);
     await loanshark.connect(account1).repay(parseEther(tokenAmount));
 
-    const finalEthBalance = +formatEther(await account1.getBalance());
+    const finalCollateralBalance = +formatEther(
+      await collateralToken.balanceOf(account1.address)
+    );
 
-    const finalEthAmount = (+tokenAmount / ratio - fee).toString();
+    const finalCollateralAmount = (+tokenAmount / ratio - fee).toString();
 
-    expect(finalEthBalance - initialEthBalance).to.closeTo(
-      +finalEthAmount,
+    expect(finalCollateralBalance - initialCollateralBalance).to.closeTo(
+      +finalCollateralAmount,
       0.1
     );
   });

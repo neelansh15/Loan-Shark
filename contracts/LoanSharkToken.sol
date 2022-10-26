@@ -91,6 +91,7 @@ contract LoanSharkToken is Ownable {
         return address(this).balance;
     }
 
+    // _amount is the Collateral Amount
     function borrow(uint256 _amount) external payable {
         require(active, "Borrowing is paused");
 
@@ -126,6 +127,7 @@ contract LoanSharkToken is Ownable {
         );
     }
 
+    // Amount is the StableCoin amount
     function repay(uint256 _amount) external {
         require(borrowed[msg.sender] >= _amount, "No Repay");
 
@@ -137,7 +139,7 @@ contract LoanSharkToken is Ownable {
 
         collectedFees += fee;
         totalCollectedFees += fee;
-        
+
         currentlyLent -= _amount;
 
         borrowed[msg.sender] -= _amount;
