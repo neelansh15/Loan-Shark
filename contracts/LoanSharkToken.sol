@@ -70,10 +70,15 @@ contract LoanSharkToken is Ownable {
     }
 
     function claim(address _token, uint256 _amount) external onlyOwner {
-        if(_token == collateralToken && _amount > collectedFees){
+        if (_token == collateralToken && _amount > collectedFees) {
             revert("Collateral token amount more than the collected fees");
         }
         IERC20(_token).transfer(owner(), _amount);
+    }
+
+    // Just in case someone sends native token to this contract accidently
+    function claimETH() external onlyOwner {
+        payable(owner()).transfer(ethBalance());
     }
 
     function setFee(uint256 _fee) external onlyOwner {
@@ -92,7 +97,7 @@ contract LoanSharkToken is Ownable {
     }
 
     // _amount is the Collateral Amount
-    function borrow(uint256 _amount) external payable {
+    function borrow(uint256 _amount) external {
         require(active, "Borrowing is paused");
 
         // Transfer _amount of collateral token to the Smart Contract
@@ -150,6 +155,12 @@ contract LoanSharkToken is Ownable {
         // Give back the collateral token minus the fees
         IERC20(collateralToken).transfer(msg.sender, finalAmount);
 
-        emit Repay(msg.sender, stablecoin, collateralToken, _amount, block.timestamp);
+        emit Repay(
+            msg.sender,
+            stablecoin,
+            collateralToken,
+            _amount,
+            block.timestamp
+        );
     }
 }
