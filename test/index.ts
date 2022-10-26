@@ -87,8 +87,8 @@ describe.only("Loan Shark Token", function () {
     loanshark = await SharkFactory.deploy(
       stablecoin.address,
       collateralToken.address,
-      parseEther("1000"),
-      0
+      parseEther("1000"), // Ratio
+      parseEther("0.1") // Fees from Collateral Token
     );
 
     await loanshark.deployed();
@@ -142,5 +142,27 @@ describe.only("Loan Shark Token", function () {
       +finalCollateralAmount,
       0.1
     );
+
+    // Collected Fees in Collateral Token
+    const collectedFees = +formatEther(await loanshark.collectedFees());
+    expect(collectedFees).to.equal(fee);
+  });
+
+  it("Should claim fees to the owner", async function () {
+    // owner = account0
+    const collectedFees = +formatEther(await loanshark.collectedFees());
+    const ownerBalance0 = +formatEther(
+      await collateralToken.balanceOf(account0.address)
+    );
+
+    await loanshark.claimFees();
+
+    const ownerBalance1 = +formatEther(
+      await collateralToken.balanceOf(account0.address)
+    );
+    const collectedFees1 = +formatEther(await loanshark.collectedFees());
+
+    expect(collectedFees1).to.equal(0);
+    expect(ownerBalance1 - ownerBalance0).to.closeTo(collectedFees, 0.01);
   });
 });
