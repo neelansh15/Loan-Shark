@@ -6,6 +6,10 @@ const routes = [
         component: () => import('../pages/Home.vue')
     },
     {
+        path: '/native',
+        component: () => import('../pages/NativeBased.vue')
+    },
+    {
         path: '/:pathMatch(.*)*',
         component: () => import('../pages/PathNotFound.vue'),
     }
