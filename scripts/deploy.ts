@@ -8,34 +8,42 @@ import { writeFileSync } from "fs";
 import { ethers } from "hardhat";
 
 async function main() {
-
   // Token
-  // const Token = await ethers.getContractFactory("SharkUSDC")
-  // const token = await Token.deploy()
+  const Token = await ethers.getContractFactory("SharkUSDC");
+  // const token = await Token.deploy("SharkUSDC", "sUSDC");
 
-  // await token.deployed()
+  const collateralToken = await Token.deploy("CollateralToken", "CLTKN");
+
+  // await token.deployed();
+  await collateralToken.deployed();
 
   // const tokenData = JSON.stringify({
   //   address: token.address,
-  //   abi: JSON.parse(token.interface.format('json') as string)
-  // })
-  // writeFileSync('./frontend/src/abis/Token.json', tokenData);
+  //   abi: JSON.parse(token.interface.format("json") as string),
+  // });
+  // writeFileSync("./frontend/src/abis/Token.json", tokenData);
 
   // console.log("Token deployed to:", token.address);
 
   // LoanShark
-  const LoanShark = await ethers.getContractFactory("LoanShark");
-  const loanshark = await LoanShark.deploy("0x1AfE5e07f6c6f092494DA8423708c412939B6906", parseEther('1000'), 0);
+  const LoanShark = await ethers.getContractFactory("LoanSharkToken");
+  const loanshark = await LoanShark.deploy(
+    "0x1AfE5e07f6c6f092494DA8423708c412939B6906",
+    // token.address,
+    collateralToken.address,
+    parseEther("1000"), // Ratio
+    parseEther("0.1") // Fees
+  );
 
   await loanshark.deployed();
 
   const loansharkData = JSON.stringify({
     address: loanshark.address,
-    abi: JSON.parse(loanshark.interface.format('json') as string)
-  })
-  writeFileSync('./frontend/src/abis/LoanShark.json', loansharkData);
+    abi: JSON.parse(loanshark.interface.format("json") as string),
+  });
+  writeFileSync("./frontend/src/abis/LoanSharkToken.json", loansharkData);
 
-  console.log("LoanShark deployed to:", loanshark.address);
+  console.log("LoanSharkToken deployed to:", loanshark.address);
 }
 
 // We recommend this pattern to be able to use async/await everywhere
