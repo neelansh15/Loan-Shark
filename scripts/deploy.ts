@@ -24,6 +24,7 @@ async function main() {
   // writeFileSync("./frontend/src/abis/Token.json", tokenData);
 
   // console.log("Token deployed to:", token.address);
+  console.log("Collateral Token deployed to:", collateralToken.address);
 
   // LoanShark
   const LoanShark = await ethers.getContractFactory("LoanSharkToken");

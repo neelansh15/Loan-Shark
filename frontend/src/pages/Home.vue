@@ -4,7 +4,7 @@ import { Jazzicon } from "vue-connect-wallet";
 import { useStore } from "../store/useStore";
 import { storeToRefs } from "pinia";
 import { ethers } from "ethers";
-import { formatEther, parseEther } from "ethers/lib/utils";
+import { formatEther, parseEther, parseUnits } from "ethers/lib/utils";
 import { onMounted, reactive, watch, computed, ref } from "vue";
 import Token from "../abis/Token.json";
 import LoanShark from "../abis/LoanSharkToken.json";
@@ -18,6 +18,7 @@ const balances = reactive({
   collateralToken: 0,
   allowance0: 0, // Stablecoin allowance
   allowance1: 0, // Collateral Token allowance
+  borrowed: 0, // Currently borrowed amount
 });
 
 const contractDetails = reactive({
@@ -26,18 +27,23 @@ const contractDetails = reactive({
   collateralToken: 0,
   ratio: null as number | null,
   fee: null as number | null,
+  owner: null as string | null,
+  collectedFees: null as number | null,
 });
 
+// Token Details
 const tokenDetails = reactive({
   name: null as string | null,
   symbol: null as string | null,
   address: null as string | null,
+  decimals: null as number | null,
 });
 
 const collateralTokenDetails = reactive({
   name: null as string | null,
   symbol: null as string | null,
   address: null as string | null,
+  decimals: null as number | null,
 });
 
 const tokenAmount1 = ref(null as number | null);
@@ -73,6 +79,17 @@ async function init() {
     provider.getSigner()
   );
   contractDetails.address = LoanShark.address;
+  contractDetails.owner = await loanshark.owner();
+
+  // Admin information
+  if (
+    contractDetails.owner &&
+    contractDetails.owner.toLowerCase() === address.value.toLowerCase()
+  ) {
+    contractDetails.collectedFees = +formatEther(
+      await loanshark.collectedFees()
+    );
+  }
 
   const tokenAddress = await loanshark.stablecoin();
   const collateralTokenAddress = await loanshark.collateralToken();
@@ -82,6 +99,7 @@ async function init() {
   tokenDetails.address = tokenAddress;
   tokenDetails.name = await token.name();
   tokenDetails.symbol = await token.symbol();
+  tokenDetails.decimals = await token.decimals();
 
   // Get Collateral token contract
   collateralToken = new ethers.Contract(
@@ -92,6 +110,7 @@ async function init() {
   collateralTokenDetails.address = collateralTokenAddress;
   collateralTokenDetails.name = await collateralToken.name();
   collateralTokenDetails.symbol = await collateralToken.symbol();
+  collateralTokenDetails.decimals = await collateralToken.decimals();
 
   getBalances();
   getLoanSharkDetails();
@@ -114,6 +133,9 @@ async function getBalances() {
   contractDetails.collateralToken = +formatEther(
     await collateralToken.balanceOf(LoanShark.address)
   );
+
+  // Get user's current borrowed amount
+  balances.borrowed = +formatEther(await loanshark.borrowed(address.value));
 }
 
 async function getLoanSharkDetails() {
@@ -155,10 +177,13 @@ async function approve1() {
 }
 
 async function borrow() {
-  if (!tokenAmount1.value) return;
-  const result = await loanshark.borrow({
-    value: parseEther(collateralAmount.value.toString()),
-  });
+  if (!tokenAmount1.value || !collateralTokenDetails.decimals) return;
+  const result = await loanshark.borrow(
+    parseUnits(
+      collateralAmount.value.toString(),
+      collateralTokenDetails.decimals
+    )
+  );
   await result.wait(1);
   init();
 }
@@ -171,6 +196,19 @@ async function repay() {
   await result.wait(1);
   init();
 }
+
+// Admin functions
+async function claimFees() {
+  const result = await loanshark.claimFees();
+  await result.wait(1);
+  init();
+}
+
+async function setFees() {
+//   const result = await loanshark.claimFees();
+//   await result.wait(1);
+//   init();
+}
 </script>
 
 <template>
@@ -179,19 +217,66 @@ async function repay() {
     <div v-if="!address" class="mx-auto mt-10 w-11/12 md:w-1/2">
       <h1>Please connect your wallet to use this Dapp</h1>
     </div>
-    <div v-else class="mx-auto w-11/12 md:w-1/2">
-      <div class="mt-10 border rounded-lg p-5">
+    <div v-else class="mt-10 mx-auto w-11/12 md:w-1/2">
+      <div
+        v-if="
+          contractDetails.owner &&
+          contractDetails.owner.toLowerCase() === address.toLowerCase()
+        "
+        class="border rounded-lg p-5 bg-blue-100/30"
+      >
+        <h1 class="font-bold">LoanShark Admin</h1>
+        <hr class="my-2" />
+        <div class="grid grid-cols-2">
+          <div>
+            <h1 class="text-sm">Collected Fees</h1>
+            <p class="font-semibold text-2xl">
+              {{ contractDetails.collectedFees }}
+              {{ collateralTokenDetails.symbol }}
+            </p>
+            <button
+              @click="claimFees"
+              class="rounded-lg bg-blue-500 px-3 py-2 mt-2 text-white text-sm"
+            >
+              Claim Fees
+            </button>
+          </div>
+          <div>
+            <h1 class="text-sm">Fees</h1>
+            <p class="font-semibold text-2xl">
+              {{ contractDetails.fee }} {{ collateralTokenDetails.symbol }}
+            </p>
+            <input type="number" class="p-2 rounded mr-2 border">
+            <button
+              @click="setFees"
+              class="rounded-lg bg-blue-500 px-3 py-2 mt-2 text-white text-sm"
+            >
+              Set fees
+            </button>
+          </div>
+        </div>
+      </div>
+      <div class="mt-5 border rounded-lg p-5">
         <h1 class="flex space-x-2 items-center text-sm font-medium">
-          <Jazzicon :diameter="40" :address="address" class="mt-1" /><span>{{
-            address
-          }}</span>
+          <Jazzicon :diameter="40" :address="address" class="mt-1" /><span>
+            <div>
+              <h1 class="text-sm font-bold">You</h1>
+              <h2 class="text-xs text-gray-500">
+                {{ address }}
+              </h2>
+            </div>
+          </span>
         </h1>
-        <h1 class="font-bold mt-2">Collateral Token Balance</h1>
+        <h1 class="font-bold mt-2">
+          {{ collateralTokenDetails.name }} Balance
+        </h1>
         <p>
           {{ balances.collateralToken }} {{ collateralTokenDetails.symbol }}
         </p>
         <h1 class="font-bold mt-2">{{ tokenDetails.name }} Balance</h1>
-        <p>{{ balances.token }}</p>
+        <p>{{ balances.token }} {{ tokenDetails.symbol }}</p>
+        <h1 class="font-bold mt-2">Currently borrowed</h1>
+        <p>{{ balances.borrowed }} {{ tokenDetails.symbol }}</p>
       </div>
       <div class="mt-5 border rounded-lg p-5">
         <div class="flex space-x-2 items-center">
@@ -205,20 +290,30 @@ async function repay() {
             <h2 class="text-xs text-gray-500">{{ contractDetails.address }}</h2>
           </div>
         </div>
-        <h1 class="font-bold mt-2">Collateral Balance</h1>
-        <p>{{ contractDetails.collateralToken }}</p>
-        <h1 class="font-bold mt-2">{{ tokenDetails.name }} Balance</h1>
-        <p>{{ contractDetails.token }}</p>
+        <h1 class="font-bold mt-2">
+          {{ collateralTokenDetails.name }} Balance (Collateral)
+        </h1>
+        <p>
+          {{ contractDetails.collateralToken }}
+          {{ collateralTokenDetails.symbol }}
+        </p>
+        <h1 class="font-bold mt-2">
+          {{ tokenDetails.name }} Balance (Loan Token)
+        </h1>
+        <p>{{ contractDetails.token }} {{ tokenDetails.symbol }}</p>
         <h1 class="font-bold mt-2">Ratio</h1>
         <p>{{ contractDetails.ratio }}</p>
         <h1 class="font-bold mt-2">Fee</h1>
         <p>{{ contractDetails.fee }} {{ collateralTokenDetails.symbol }}</p>
+        <h1 class="font-bold mt-2">Owner</h1>
+        <p>{{ contractDetails.owner }}</p>
       </div>
       <!-- Borrow card -->
       <div class="mt-5 border rounded-lg p-5" v-if="contractDetails.ratio">
         <h1 class="font-bold text-lg">Borrow</h1>
         <form @submit.prevent="borrow">
-          <label for="borrowToken">Amount of Stablecoins to borrow:</label
+          <label for="borrowToken"
+            >Amount of <b>{{ tokenDetails.name }}</b> to borrow:</label
           ><br />
           <input
             type="number"
@@ -235,6 +330,7 @@ async function repay() {
 
           <h3 class="font-bold mt-3">
             Collateral to pay: {{ collateralAmount }}
+            {{ collateralTokenDetails.symbol }}
           </h3>
           <button
             type="button"
@@ -257,7 +353,9 @@ async function repay() {
       <div class="mt-5 border rounded-lg p-5" v-if="contractDetails.ratio">
         <h1 class="font-bold text-lg">Repay</h1>
         <form @submit.prevent="repay">
-          <label for="borrowToken">Amount of Stablecoins to repay:</label><br />
+          <label for="borrowToken"
+            >Amount of <b>{{ tokenDetails.name }}</b> to repay:</label
+          ><br />
           <input
             type="number"
             inputmode="decimal"
