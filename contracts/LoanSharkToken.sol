@@ -118,6 +118,9 @@ contract LoanSharkToken is Ownable {
 
         currentlyLent += (_amount * ratio) / 1e18;
 
+        collectedFees += fee;
+        totalCollectedFees += fee;
+
         borrowed[msg.sender] += (_amount * ratio) / 1e18;
 
         // Transfer stablecoins to the borrower
@@ -141,9 +144,6 @@ contract LoanSharkToken is Ownable {
             IERC20(collateralToken).balanceOf(address(this)) >= finalAmount,
             "Insufficient Collateral in Contract"
         );
-
-        collectedFees += fee;
-        totalCollectedFees += fee;
 
         currentlyLent -= _amount;
 
