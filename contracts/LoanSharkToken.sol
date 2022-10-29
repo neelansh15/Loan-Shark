@@ -4,13 +4,14 @@ pragma solidity ^0.8.0;
 
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/interfaces/IERC20.sol";
+import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 
 /**
     Supply ANY ERC20 Token as collateral to receive stablecoin as loan for a fee and pay back anytime.
     CT = Collateral Token
     ST = Stablecoin Token
  */
-contract LoanSharkToken is Ownable {
+contract LoanSharkToken is Ownable, ReentrancyGuard {
     address public immutable stablecoin;
     address public immutable collateralToken;
 
@@ -97,7 +98,7 @@ contract LoanSharkToken is Ownable {
     }
 
     // _amount is the Collateral Amount
-    function borrow(uint256 _amount) external {
+    function borrow(uint256 _amount) external nonReentrant {
         require(active, "Borrowing is paused");
 
         // Transfer _amount of collateral token to the Smart Contract
@@ -136,7 +137,7 @@ contract LoanSharkToken is Ownable {
     }
 
     // Amount is the StableCoin amount
-    function repay(uint256 _amount) external {
+    function repay(uint256 _amount) external nonReentrant {
         require(borrowed[msg.sender] >= _amount, "No Repay");
 
         uint256 finalAmount = (_amount / (ratio / 1e18)) - fee;

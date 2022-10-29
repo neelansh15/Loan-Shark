@@ -4,11 +4,12 @@ pragma solidity ^0.8.0;
 
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/interfaces/IERC20.sol";
+import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 
 /**
     Supply native currency ETHER as collateral to receive stablecoin as loan for a fee and pay back anytime.
  */
-contract LoanShark is Ownable {
+contract LoanShark is Ownable, ReentrancyGuard {
     address public immutable stablecoin;
 
     // Fees in Ether
@@ -78,7 +79,7 @@ contract LoanShark is Ownable {
         return address(this).balance;
     }
 
-    function borrow() external payable {
+    function borrow() external payable nonReentrant {
         require(active, "Borrowing is paused");
         uint256 amount = msg.value;
         IERC20 token = IERC20(stablecoin);
@@ -98,7 +99,7 @@ contract LoanShark is Ownable {
         emit Borrow(msg.sender, stablecoin, amount, block.timestamp);
     }
 
-    function repay(uint256 _amount) external {
+    function repay(uint256 _amount) external nonReentrant {
         require(borrowed[msg.sender] >= _amount, "No Repay");
 
         uint256 finalAmount = (_amount / (ratio / 10**18)) - fee;
